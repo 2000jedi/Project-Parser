@@ -53,6 +53,11 @@ int find_rule(std::string rule) {
 
 // filter empty non-terminals (epsilons)
 Node FilterEmpty(Node root) {
+  if (root.t.substr(0, 9) == "<LITERAL_") {
+    // a literal style catagory, unnecessary to put its children in
+    return Node(root.t);
+  }
+
   if (root.t[0] == '<' && root.child.size() == 0)
     return Node("");
 
@@ -81,6 +86,7 @@ void TableConstructor(std::ifstream *fd) {
   // get start symbol
   if (! std::getline(*fd, start_symbol)) {
     std::cerr << "Failed to open parse table" << std::endl;
+    exit(-1);
   }
 
   // get transition tables
@@ -126,20 +132,31 @@ void TableConstructor(std::ifstream *fd) {
     }
 
     // set the selection table
-    if (rules.back().reps[0][0] == '<') {
-      for (int k = 0; rule_table[k][0] != 0; ++k) {
-        if (rule_table[k] == rules.back().reps[0]) {
-          for (int q = 0; q < 255; ++q) {
-            if (selection[k][q] != -1) {
-              selection[cur_rule][q] = rules.size() - 1;
-            }
-          }
-          break;
-        }
+    if (rules.back().reps[0] == "<EPS>") { // epsilon transition
+      if (rules.back().reps.size() != 1) {
+        std::cerr << "Concating Epsilon transition" << std::endl;
+        exit(-1);
+      }
+      for (int q = 0; q < 255; ++q) {
+        if (selection[cur_rule][q] == -1)
+          selection[cur_rule][q] = rules.size() - 1;
       }
     } else {
-      for (auto c : rules.back().reps[0]) { // terminals
-        selection[cur_rule][(int) c] = rules.size() - 1;
+      if (rules.back().reps[0][0] == '<') {
+        for (int k = 0; rule_table[k][0] != 0; ++k) {
+          if (rule_table[k] == rules.back().reps[0]) {
+            for (int q = 0; q < 255; ++q) {
+              if (selection[k][q] != -1) {
+                selection[cur_rule][q] = rules.size() - 1;
+              }
+            }
+            break;
+          }
+        }
+      } else {
+        for (auto c : rules.back().reps[0]) { // terminals
+          selection[cur_rule][(int) c] = rules.size() - 1;
+        }
       }
     }
   }
@@ -147,6 +164,7 @@ void TableConstructor(std::ifstream *fd) {
   start_rule = find_rule(start_symbol);
   if (start_rule == -1) {
     std::cerr << "Cannot find suitable start symbol: " << start_symbol << std::endl;
+    exit(-1);
   }
 }
 
@@ -159,7 +177,9 @@ Node PushdownAutomata(std::string str) {
   while (stk.size() > 0) {
     Node* cur_node = stk.top();
     stk.pop();
-
+    if (cur_node->t == "<EPS>") { // epsilon, skip
+      continue;
+    }
     if (cur_node->t[0] == '<') { // non-terminal
       int cur_sym_int = find_rule(cur_node->t);
       if (selection[cur_sym_int][(int) *p] != -1) { // the rule is found
@@ -171,11 +191,9 @@ Node PushdownAutomata(std::string str) {
           stk.push(&(cur_node->child[i]));
         }
       } else { // does not match
-        if (selection[cur_sym_int]['~'] == -1) { // epsilon placeholder found
-          std::cerr << "Rejected at " << cur_node->t << ": " << *p << std::endl;
-          std::cerr << "Current string location: " << std::string(p, str.end());
-          return Node("");
-        }
+        std::cerr << "Rejected at " << cur_node->t << ": " << *p << std::endl;
+        std::cerr << "Current string location: " << std::string(p, str.end());
+        return Node("");
       }
     } else { // terminal
       auto it = std::find(cur_node->t.begin(), cur_node->t.end(), *p);
@@ -208,7 +226,7 @@ Node parser(std::string parse_table, std::string input) {
   if (PA.t == "") {
     return PA; // ERROR
   }
-  
+
   Node FE = FilterEmpty(PA);
   #ifdef DEBUG_FE
   std::cout << "Printing Parse Tree: " << std::endl;
