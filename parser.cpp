@@ -4,17 +4,19 @@
 
 #include <string>
 #include <iostream>
+#include <vector>
 #include <cstring>
 #include "tree.hpp"
+#include "parser.hpp"
 
 #define MAX_RULE 500
 #define MAX_RULE_LEN 100
 #define BUFFER 255
 
-int num_rule;
 int start_rule;
 std::string rule_table[MAX_RULE];
-std::string rules[MAX_RULE][MAX_RULE_LEN];
+// std::string rules[MAX_RULE][MAX_RULE_LEN];
+std::vector<catagory> rules;
 int selection[MAX_RULE][255];
 
 void print_rules() {
@@ -22,9 +24,10 @@ void print_rules() {
    * print_rules - print all catagory rules out
    */
   #ifdef DEBUG
-  for (int i = 0; rules[i][0] != ""; ++i) {
-    for (int j = 0; rules[i][j] != ""; ++j)
-      std::cout << rules[i][j] << ' ';
+  for (unsigned int i = 0; i < rules.size(); ++i) {
+    std::cout << rules[i].name << " ";
+    for (unsigned int j = 0; j < rules[i].reps.size() ; ++j)
+      std::cout << rules[i].reps[j] << ' ';
     std::cout << std::endl;
   }
   #endif
@@ -64,14 +67,12 @@ Node FilterEmpty(Node root) {
 
 // construct parse table from file
 void TableConstructor(FILE *file) {
-  // memset(rule_table, 0, sizeof(rule_table));
-  // memset(rules, 0, sizeof(rules));
+  rules.clear();
   for (int i = 0; i < MAX_RULE; ++i) {
     for (int j = 0; j < 255; ++j)
       selection[i][j] = -1;
   }
 
-  num_rule = 0;
   std::string start_symbol;
 
   char buf[BUFFER];
@@ -89,15 +90,17 @@ void TableConstructor(FILE *file) {
   while (fgets(buf, BUFFER, file) != NULL) {
     buf[strcspn(buf, "\r\n")] = 0;
     // find rule for non-terminal
-    std::string s = "";
+
+    // get substring for catagory name
+    std::string s = ""; //std::string(buf).substr(0, std::string(buf).find("=")));
     int j = 0;
     while (buf[j] != '=') {
       s += buf[j];
       j++;
     }
     j++;
-    rules[num_rule][0] = s;
-    int i = 1;
+    rules.push_back(catagory(s));
+
     while (j < (int) strlen(buf)) {
       if (buf[j] == '<') {
         s = "";
@@ -106,13 +109,15 @@ void TableConstructor(FILE *file) {
           j++;
         }
         s += '>';
-        rules[num_rule][i++] = s;
+        rules.back().reps.push_back(s);
       } else {
         if (buf[j + 1] == '|') { // `a|b` literal
-          rules[num_rule][i++] = buf[j] + buf[j+1] + buf[j+2];
+          s = buf[j] + buf[j+1] + buf[j+2];
+          rules.back().reps.push_back(s);
           j += 2;
         } else { // single terminal without `|` literal
-          rules[num_rule][i++] = buf[j];
+          s = buf[j];
+          rules.back().reps.push_back(s);
         }
       }
       j++;
@@ -121,39 +126,38 @@ void TableConstructor(FILE *file) {
     // put the non-terminal into rule table
     int cur_rule = -1;
 
-    for (int k = 0; k < num_rule + 1; ++k) {
+    for (unsigned int k = 0; k < rules.size(); ++k) {
       if (rule_table[k] == "") {
-        rule_table[k] = rules[num_rule][0];
+        rule_table[k] = rules.back().name;
         cur_rule = k;
         break;
       }
-      if (rules[num_rule][0] == rule_table[k]) {
+      if (rule_table[k] == rules.back().name) {
         cur_rule = k;
         break;
       }
     }
 
-    if (rules[num_rule][1][0] == '<') {
+    // set the selection table
+    if (rules.back().reps[0][0] == '<') {
       for (int k = 0; rule_table[k][0] != 0; ++k) {
-        if (rule_table[k] == rules[num_rule][1]) {
+        if (rule_table[k] == rules.back().reps[0]) {
           for (int q = 0; q < 255; ++q) {
             if (selection[k][q] != -1) {
-              selection[cur_rule][q] = num_rule;
+              selection[cur_rule][q] = rules.size() - 1;
             }
           }
           break;
         }
       }
     } else {
-      if (rules[num_rule][1].length() == 3) { // `a|b` literal
-        selection[cur_rule][(int) rules[num_rule][1][0]] = num_rule;
-        selection[cur_rule][(int) rules[num_rule][1][2]] = num_rule;
+      if (rules.back().reps[0].length() == 3) { // `a|b` literal
+        selection[cur_rule][(int) rules.back().reps[0][0]] = rules.size() - 1;
+        selection[cur_rule][(int) rules.back().reps[0][2]] = rules.size() - 1;
       } else {
-        selection[cur_rule][(int) rules[num_rule][1][0]] = num_rule;
+        selection[cur_rule][(int) rules.back().reps[0][0]] = rules.size() - 1;
       }
     }
-
-    num_rule++;
   }
 
   start_rule = find_rule(start_symbol);
