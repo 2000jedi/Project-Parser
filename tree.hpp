@@ -1,17 +1,16 @@
 #pragma once
 
 #include <string>
+#include <vector>
 
 #define TYPE_TREE std::string
 
-typedef struct node* Node;
+class Node {
+public:
+  TYPE_TREE t;
+  std::vector<Node> child;
 
-extern Node new_node(TYPE_TREE x);
-extern TYPE_TREE node_get_value(Node node);
-extern void node_set_value(Node node, TYPE_TREE val);
-extern Node NodeChild(Node node, int i);
-extern int NodeCnt(Node node);
-extern void node_append_child(Node parent, Node child);
-extern void node_append_tree(Node parent, Node root);
-extern void PrintTree(Node tree);
-extern void tree_free(Node n);
+  Node(TYPE_TREE x);
+
+  void print();
+};
