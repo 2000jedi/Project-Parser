@@ -1,11 +1,14 @@
-#include "common.h"
-#define TYPE_TREE char*
+#include <string>
+#include <iostream>
+
+#define TYPE_TREE std::string
+#define NODE_LEN 100
 
 /**
  * A simple tree structure
  */
 struct node {
-  TYPE_TREE this;
+  TYPE_TREE t;
   struct node* child[NODE_LEN];
   int num;
 };
@@ -14,19 +17,18 @@ typedef struct node* Node;
 
 Node new_node(TYPE_TREE x) {
   Node node = (Node)malloc(sizeof(struct node));
-  node->this = x;
+  node->t = x;
   node->num = 0;
 
   return node;
 }
 
 TYPE_TREE node_get_value(Node node) {
-  return node->this;
+  return node->t;
 }
 
 void node_set_value(Node node, TYPE_TREE value) {
-  free(node->this);
-  node->this = value;
+  node->t = value;
 }
 
 void node_append_child(Node parent, Node child) {
@@ -48,7 +50,7 @@ void node_append_tree(Node parent, Node root) {
 void tree_print_rec(Node node, int indent) {
   int i;
   for (i = 0; i < indent; ++i) printf("  ");
-  printf("%s\n", node->this);
+  std::cout << node->t << std::endl;
 
   for (i = 0; i < node->num; ++i) {
     tree_print_rec(node->child[i], indent + 1);
@@ -58,7 +60,6 @@ void tree_print_rec(Node node, int indent) {
 void tree_free(Node n) {
   for (int i=0; i<n->num; ++i)
     tree_free(n->child[i]);
-  free(n->this);
   free(n);
 }
 

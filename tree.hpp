@@ -1,6 +1,8 @@
 #pragma once
 
-#define TYPE_TREE char*
+#include <string>
+
+#define TYPE_TREE std::string
 
 typedef struct node* Node;
 
