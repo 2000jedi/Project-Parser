@@ -4,7 +4,9 @@
 
 #include <string>
 #include <iostream>
+#include <fstream>
 #include <vector>
+#include <algorithm>
 #include <cstring>
 #include "tree.hpp"
 #include "parser.hpp"
@@ -14,8 +16,7 @@
 #define BUFFER 255
 
 int start_rule;
-std::string rule_table[MAX_RULE];
-// std::string rules[MAX_RULE][MAX_RULE_LEN];
+std::vector<std::string> rule_table;
 std::vector<catagory> rules;
 int selection[MAX_RULE][255];
 
@@ -66,42 +67,32 @@ Node FilterEmpty(Node root) {
 }
 
 // construct parse table from file
-void TableConstructor(FILE *file) {
+void TableConstructor(std::ifstream *fd) {
   rules.clear();
+  rule_table.clear();
   for (int i = 0; i < MAX_RULE; ++i) {
     for (int j = 0; j < 255; ++j)
       selection[i][j] = -1;
   }
 
   std::string start_symbol;
-
-  char buf[BUFFER];
-
+  std::string buf;
   // get start symbol
-
-  if (fgets(buf, BUFFER, file) == NULL) {
+  if (! std::getline(*fd, start_symbol)) {
     std::cerr << "Failed to open parse table" << std::endl;
   }
-  // remove trailing '\r\n'
-  buf[strcspn(buf, "\r\n")] = 0;
-  start_symbol = buf;
 
   // get transition tables
-  while (fgets(buf, BUFFER, file) != NULL) {
-    buf[strcspn(buf, "\r\n")] = 0;
+  while (std::getline(*fd, buf)) {
     // find rule for non-terminal
 
     // get substring for catagory name
-    std::string s = ""; //std::string(buf).substr(0, std::string(buf).find("=")));
-    int j = 0;
-    while (buf[j] != '=') {
-      s += buf[j];
-      j++;
-    }
-    j++;
+    std::string s = buf.substr(0, buf.find("="));
     rules.push_back(catagory(s));
+    int j = buf.find("=") + 1;
 
-    while (j < (int) strlen(buf)) {
+    // get each identifier
+    while (j < (int) buf.length()) {
       if (buf[j] == '<') {
         s = "";
         while (buf[j] != '>') {
@@ -111,31 +102,26 @@ void TableConstructor(FILE *file) {
         s += '>';
         rules.back().reps.push_back(s);
       } else {
-        if (buf[j + 1] == '|') { // `a|b` literal
-          s = buf[j] + buf[j+1] + buf[j+2];
-          rules.back().reps.push_back(s);
+        s = "";
+        while ((j < (int) buf.size() - 2) && (buf[j+1] == '|')) { // concats a|b
+          s += buf[j];
           j += 2;
-        } else { // single terminal without `|` literal
-          s = buf[j];
-          rules.back().reps.push_back(s);
         }
+        s += buf[j];
+        rules.back().reps.push_back(s);
       }
       j++;
     }
 
     // put the non-terminal into rule table
     int cur_rule = -1;
-
-    for (unsigned int k = 0; k < rules.size(); ++k) {
-      if (rule_table[k] == "") {
-        rule_table[k] = rules.back().name;
-        cur_rule = k;
-        break;
-      }
-      if (rule_table[k] == rules.back().name) {
-        cur_rule = k;
-        break;
-      }
+    std::vector<std::string>::iterator it = std::find(rule_table.begin(), rule_table.end(), rules.back().name);
+    if (it == rule_table.end()) {
+      // rule not found
+      rule_table.push_back(rules.back().name);
+      cur_rule = rule_table.size() - 1;
+    } else {
+      cur_rule = std::distance(rule_table.begin(), it);
     }
 
     // set the selection table
@@ -151,11 +137,8 @@ void TableConstructor(FILE *file) {
         }
       }
     } else {
-      if (rules.back().reps[0].length() == 3) { // `a|b` literal
-        selection[cur_rule][(int) rules.back().reps[0][0]] = rules.size() - 1;
-        selection[cur_rule][(int) rules.back().reps[0][2]] = rules.size() - 1;
-      } else {
-        selection[cur_rule][(int) rules.back().reps[0][0]] = rules.size() - 1;
+      for (auto c : rules.back().reps[0]) { // terminals
+        selection[cur_rule][(int) c] = rules.size() - 1;
       }
     }
   }
@@ -165,7 +148,7 @@ void TableConstructor(FILE *file) {
     std::cerr << "Cannot find suitable start symbol: " << start_symbol << std::endl;
   }
 }
-/*
+
 Node PushdownAutomata(char *str) {
   Node tree = new_node(strdup(rule_table[start_rule]));
   stack stk = new_stack(MAX_RULE * MAX_RULE_LEN);
@@ -225,14 +208,13 @@ Node PushdownAutomata(char *str) {
   stack_free(stk);
   return tree;
 }
-*/
+
 
 Node parser(std::string parse_table, std::string input) {
-  FILE *file = fopen(parse_table.c_str(), "r");
-  TableConstructor(file);
+  std::ifstream fp(parse_table);
+  TableConstructor(&fp);
   print_rules();
-  return NULL;
-/*
+
   Node PA = PushdownAutomata(input);
   if (PA == NULL) {
     fclose(file);
@@ -242,5 +224,5 @@ Node parser(std::string parse_table, std::string input) {
   tree_free(PA);
   fclose(file);
   return FE;
-  */
+  
 }
