@@ -25,7 +25,7 @@ void print_rules() {
   /** debug use only
    * print_rules - print all catagory rules out
    */
-  #ifdef DEBUG
+  #ifdef DEBUG_RULES
   for (unsigned int i = 0; i < rules.size(); ++i) {
     std::cout << rules[i].name << " ";
     for (unsigned int j = 0; j < rules[i].reps.size() ; ++j)
@@ -152,44 +152,44 @@ void TableConstructor(std::ifstream *fd) {
 
 Node PushdownAutomata(std::string str) {
   Node tree = Node(rule_table[start_rule]);
-  std::stack<Node> stk;
-  stk.push(tree);
+  std::stack<Node*> stk;
+  stk.push(&tree);
   auto p = str.begin();
   while (*p == ' ') p++;
   while (stk.size() > 0) {
-    Node cur_node = stk.top();
+    Node* cur_node = stk.top();
     stk.pop();
 
-    if (cur_node.t[0] == '<') { // non-terminal
-      int cur_sym_int = find_rule(cur_node.t);
+    if (cur_node->t[0] == '<') { // non-terminal
+      int cur_sym_int = find_rule(cur_node->t);
       if (selection[cur_sym_int][(int) *p] != -1) { // the rule is found
         int cur_rul = selection[cur_sym_int][(int) *p];
         for (auto i = rules[cur_rul].reps.begin(); i != rules[cur_rul].reps.end(); ++i) {
-          cur_node.child.push_back(Node(*i));
+          cur_node->child.push_back(Node(*i));
         }
-        for (int i = cur_node.child.size() - 1; i >= 0; --i) {
-          stk.push(cur_node.child[i]);
+        for (int i = cur_node->child.size() - 1; i >= 0; --i) {
+          stk.push(&(cur_node->child[i]));
         }
       } else { // does not match
         if (selection[cur_sym_int]['~'] == -1) { // epsilon placeholder found
-          std::cerr << "Rejected at " << cur_node.t << ": " << *p << std::endl;
+          std::cerr << "Rejected at " << cur_node->t << ": " << *p << std::endl;
           std::cerr << "Current string location: " << std::string(p, str.end());
           return Node("");
         }
       }
     } else { // terminal
-      auto it = std::find(cur_node.t.begin(), cur_node.t.end(), *p);
-      if (it == cur_node.t.end()) {
-        std::cerr << "Required literal in '" << cur_node.t << "', found " << *p << std::endl;
+      auto it = std::find(cur_node->t.begin(), cur_node->t.end(), *p);
+      if (it == cur_node->t.end()) {
+        std::cerr << "Required literal in '" << cur_node->t << "', found " << *p << std::endl;
         return Node("");
       } else {
-        cur_node.t = *p;
+        cur_node->t = *p;
       }
       ++p;
     }
   }
   if (stk.size() > 0) {
-    std::cerr << "Required " << stk.top().t << ", found EOF" << std::endl;
+    std::cerr << "Required " << stk.top()->t << ", found EOF" << std::endl;
     return Node("");
   }
   return tree;
@@ -201,13 +201,18 @@ Node parser(std::string parse_table, std::string input) {
   print_rules();
 
   Node PA = PushdownAutomata(input);
-  #ifdef DEBUG
+  #ifdef DEBUG_PA
   std::cout << "Printing Parse Tree: " << std::endl;
   PA.print();
   #endif
   if (PA.t == "") {
     return PA; // ERROR
   }
+  
   Node FE = FilterEmpty(PA);
+  #ifdef DEBUG_FE
+  std::cout << "Printing Parse Tree: " << std::endl;
+  FE.print();
+  #endif
   return FE;
 }
