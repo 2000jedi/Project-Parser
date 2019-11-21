@@ -11,4 +11,5 @@ public:
 
   Node(T x);
   void print(void);
+  void reduce(std::string catagory);
 };

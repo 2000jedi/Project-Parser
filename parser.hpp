@@ -6,13 +6,13 @@
 
 class catagory {
 public:
-    std::string name;
-    std::vector<std::string> reps;
+  std::string name;
+  std::vector<std::string> reps;
 
-    catagory(std::string name){
-        this->name = name;
-        reps.clear();
-    }
+  catagory(std::string name){
+    this->name = name;
+    reps.clear();
+  }
 };
 
 extern Node<std::string> parser(std::string str, std::string input);
