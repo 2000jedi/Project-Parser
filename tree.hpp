@@ -3,14 +3,12 @@
 #include <string>
 #include <vector>
 
-#define TYPE_TREE std::string
-
+template <class T> 
 class Node {
 public:
-  TYPE_TREE t;
+  T t;
   std::vector<Node> child;
 
-  Node(TYPE_TREE x);
-
-  void print();
+  Node(T x);
+  void print(void);
 };

@@ -2,12 +2,14 @@
 #include <iostream>
 #include "tree.hpp"
 
-Node::Node(TYPE_TREE x) {
+template <class T> 
+Node<T>::Node(T x) {
   this->t = x;
   child.clear();
 }
 
-void tree_print_rec(Node node, int indent) {
+template <class T> 
+void tree_print_rec(Node<T> node, int indent) {
   int i;
   for (i = 0; i < indent; ++i) printf("  ");
   std::cout << node.t << std::endl;
@@ -17,6 +19,9 @@ void tree_print_rec(Node node, int indent) {
   }
 }
 
-void Node::print() {
+template <class T> 
+void Node<T>::print() {
   tree_print_rec(*this, 0);
 }
+
+template class Node<std::string>;

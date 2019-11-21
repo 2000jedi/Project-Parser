@@ -15,4 +15,4 @@ public:
     }
 };
 
-extern Node parser(std::string str, std::string input);
+extern Node<std::string> parser(std::string str, std::string input);
