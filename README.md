@@ -5,7 +5,7 @@ A parser that transfers a given input structure into a parse tree.
 
 The basic structure of the parse table would be:
 
-> <Category>=Literal1<Category2>Literal2...
+> \<Category\>=Literal1\<Category2\>Literal2...
   
 Separated by lines, each line represents a parse rule.
 
