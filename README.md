@@ -1,7 +1,13 @@
-# yparser
+# Project Parser
 A parser that transfers a given input structure into a parse tree.
 
 ## Structure of the Parse Table
+
+The basic structure of the parse table would be:
+
+> <Category>=Literal1<Category2>Literal2...
+  
+Separated by lines, each line represents a parse rule.
 
 ### Special Catagories
 * `<EPS>` is the epsilon transition. Be sure nothing is after or before it.
@@ -10,4 +16,4 @@ A parser that transfers a given input structure into a parse tree.
 ## TO-DO
 - [ ] Add description on how to build parse_table.
 - [ ] Add rules for special literals internally.
-- [ ] Add convenient methods to turn left factored tree into normal parse tree.
+- [ ] Add convenient methods to convert left factored tree.
