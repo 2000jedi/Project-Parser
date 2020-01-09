@@ -212,11 +212,13 @@ Node<std::string> PushdownAutomata(std::string str) {
   return tree;
 }
 
-Node<std::string> parser(std::string parse_table, std::string input) {
+void initialize_table(std::string parse_table) {
   std::ifstream fp(parse_table);
   TableConstructor(&fp);
   print_rules();
+}
 
+Node<std::string> parser(std::string input) {
   Node<std::string> PA = PushdownAutomata(input);
   #ifdef DEBUG_PA
   std::cout << "Printing Parse Tree: " << std::endl;

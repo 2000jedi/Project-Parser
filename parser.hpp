@@ -15,4 +15,5 @@ public:
   }
 };
 
-extern Node<std::string> parser(std::string str, std::string input);
+extern void initialize_table(std::string file);
+extern Node<std::string> parser(std::string input);

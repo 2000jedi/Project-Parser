@@ -1,5 +1,6 @@
 #include "parser.hpp"
 
 int main(int argc, char** argv){
-    parser("parse_table", "SELECT * FROM table;");
+    initialize_table("parse_table");
+    parser("SELECT * FROM table;");
 }
